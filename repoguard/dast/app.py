@@ -12,12 +12,12 @@ def scan_live_application(client: DastClient) -> List[Finding]:
         findings.append(
             Finding(
                 id="DAST-APP-UNREACHABLE",
-                title="Target application is unreachable",
+                title="Target unreachable",
                 severity=Severity.HIGH,
                 owasp_category=OWASPCategory.A05.value,
                 source=FindingSource.DAST_APP,
-                description=f"Could not establish HTTP connection to {client.base_url}: {resp.body}",
-                fix="Ensure the web server is booted and accessible at the specified URL.",
+                description=f"Cannot reach {client.base_url}: {resp.body}",
+                fix="Start server at target URL.",
             )
         )
         return findings
@@ -32,10 +32,10 @@ def scan_live_application(client: DastClient) -> List[Finding]:
                 severity=Severity.MEDIUM,
                 owasp_category=OWASPCategory.A05.value,
                 source=FindingSource.DAST_APP,
-                description="The response header Content-Security-Policy is not set, leaving users vulnerable to Cross-Site Scripting (XSS) and data injection.",
+                description="Content-Security-Policy missing. Vulnerable to XSS.",
                 request_detail=f"GET / HTTP/1.1\nHost: {client.base_url}",
                 response_detail=f"Status: {resp.status_code}\nHeaders: {headers}",
-                fix="Implement a restrictive Content-Security-Policy (e.g. default-src 'self').",
+                fix="Add Content-Security-Policy: default-src 'self'.",
             )
         )
 
@@ -43,14 +43,14 @@ def scan_live_application(client: DastClient) -> List[Finding]:
         findings.append(
             Finding(
                 id="DAST-HDR-MISSING-HSTS",
-                title="Missing HTTP Strict Transport Security (HSTS) header",
+                title="Missing HSTS header",
                 severity=Severity.MEDIUM,
                 owasp_category=OWASPCategory.A05.value,
                 source=FindingSource.DAST_APP,
-                description="The Strict-Transport-Security header is not configured on HTTPS endpoint, allowing potential SSL stripping attacks.",
+                description="Strict-Transport-Security missing on HTTPS.",
                 request_detail=f"GET / HTTP/1.1\nHost: {client.base_url}",
                 response_detail=f"Status: {resp.status_code}",
-                fix="Add 'Strict-Transport-Security: max-age=31536000; includeSubDomains' to response headers.",
+                fix="Add Strict-Transport-Security: max-age=31536000; includeSubDomains.",
             )
         )
 
@@ -62,10 +62,10 @@ def scan_live_application(client: DastClient) -> List[Finding]:
                 severity=Severity.MEDIUM,
                 owasp_category=OWASPCategory.A05.value,
                 source=FindingSource.DAST_APP,
-                description="The X-Frame-Options header is missing, allowing pages to be framed by malicious sites for Clickjacking attacks.",
+                description="X-Frame-Options missing. Vulnerable to clickjacking.",
                 request_detail=f"GET / HTTP/1.1\nHost: {client.base_url}",
                 response_detail=f"Status: {resp.status_code}",
-                fix="Set 'X-Frame-Options: DENY' or 'X-Frame-Options: SAMEORIGIN'.",
+                fix="Set X-Frame-Options to DENY or SAMEORIGIN.",
             )
         )
 
@@ -77,10 +77,10 @@ def scan_live_application(client: DastClient) -> List[Finding]:
                 severity=Severity.LOW,
                 owasp_category=OWASPCategory.A05.value,
                 source=FindingSource.DAST_APP,
-                description="The X-Content-Type-Options header is missing. Browsers may MIME-sniff the response, leading to unexpected script execution.",
+                description="X-Content-Type-Options missing. MIME sniffing risk.",
                 request_detail=f"GET / HTTP/1.1\nHost: {client.base_url}",
                 response_detail=f"Status: {resp.status_code}",
-                fix="Set 'X-Content-Type-Options: nosniff'.",
+                fix="Set X-Content-Type-Options: nosniff.",
             )
         )
 
@@ -90,14 +90,14 @@ def scan_live_application(client: DastClient) -> List[Finding]:
         findings.append(
             Finding(
                 id="DAST-HDR-VERSION-DISCLOSURE",
-                title="Server and framework version disclosure in HTTP headers",
+                title="Server version disclosure in headers",
                 severity=Severity.LOW,
                 owasp_category=OWASPCategory.A05.value,
                 source=FindingSource.DAST_APP,
-                description=f"Server exposes version signatures: Server: '{server_val}', X-Powered-By: '{powered_by}'. This aids attackers in fingerprinting known CVEs.",
+                description=f"Headers expose version: {server_val} {powered_by}".strip(),
                 request_detail=f"GET / HTTP/1.1\nHost: {client.base_url}",
                 response_detail=f"Server: {server_val}\nX-Powered-By: {powered_by}",
-                fix="Strip or suppress Server and X-Powered-By header banners in web server / reverse proxy configuration.",
+                fix="Hide Server and X-Powered-By banners.",
             )
         )
 
@@ -108,46 +108,46 @@ def scan_live_application(client: DastClient) -> List[Finding]:
             findings.append(
                 Finding(
                     id="DAST-COOKIE-MISSING-SECURE",
-                    title="Cookie issued without Secure flag",
+                    title="Cookie missing Secure flag",
                     severity=Severity.MEDIUM,
                     owasp_category=OWASPCategory.A05.value,
                     source=FindingSource.DAST_APP,
-                    description="Session or tracking cookie is set without the Secure attribute, permitting transmission over cleartext HTTP.",
+                    description="Cookie sent without Secure flag over HTTPS.",
                     offending_snippet=raw_cookie[:100],
-                    fix="Set the Secure flag on all Set-Cookie directives.",
+                    fix="Add Secure flag to cookies.",
                 )
             )
         if "httponly" not in cookie_lower:
             findings.append(
                 Finding(
                     id="DAST-COOKIE-MISSING-HTTPONLY",
-                    title="Cookie issued without HttpOnly flag",
+                    title="Cookie missing HttpOnly flag",
                     severity=Severity.MEDIUM,
                     owasp_category=OWASPCategory.A05.value,
                     source=FindingSource.DAST_APP,
-                    description="Cookie is accessible via client-side JavaScript (document.cookie), enabling session theft via XSS.",
+                    description="Cookie accessible via JavaScript.",
                     offending_snippet=raw_cookie[:100],
-                    fix="Add the HttpOnly attribute to sensitive session and auth cookies.",
+                    fix="Add HttpOnly flag to cookies.",
                 )
             )
         if "samesite" not in cookie_lower:
             findings.append(
                 Finding(
                     id="DAST-COOKIE-MISSING-SAMESITE",
-                    title="Cookie issued without SameSite flag",
+                    title="Cookie missing SameSite flag",
                     severity=Severity.LOW,
                     owasp_category=OWASPCategory.A05.value,
                     source=FindingSource.DAST_APP,
-                    description="Cookie does not declare SameSite attribute, which increases susceptibility to Cross-Site Request Forgery.",
+                    description="Cookie missing SameSite attribute.",
                     offending_snippet=raw_cookie[:100],
-                    fix="Set 'SameSite=Lax' or 'SameSite=Strict' on all cookies.",
+                    fix="Set SameSite=Lax or Strict.",
                 )
             )
 
     paths_to_probe = [
         ("/.git/HEAD", "Git repository metadata exposed", Severity.CRITICAL, "ref: refs/"),
-        ("/.env", "Environment variable file exposed over HTTP", Severity.CRITICAL, "="),
-        ("/admin/", "Administrative interface exposed publicly", Severity.LOW, "admin"),
+        ("/.env", "Environment file exposed", Severity.CRITICAL, "="),
+        ("/admin/", "Admin interface exposed", Severity.LOW, "admin"),
         ("/admin/login/", "Admin login portal exposed", Severity.LOW, "login"),
     ]
 
@@ -163,10 +163,10 @@ def scan_live_application(client: DastClient) -> List[Finding]:
                     source=FindingSource.DAST_APP,
                     endpoint=probe_path,
                     http_method="GET",
-                    description=f"Path '{probe_path}' responded with 200 OK containing expected sensitive content indicator.",
+                    description=f"Path '{probe_path}' returned 200 OK with sensitive contents.",
                     request_detail=f"GET {probe_path} HTTP/1.1\nHost: {client.base_url}",
-                    response_detail=f"Status: 200\nBody Preview: {probe_res.body[:200]}",
-                    fix=f"Block access to '{probe_path}' in web server / reverse proxy rules.",
+                    response_detail=f"Status: 200\nPreview: {probe_res.body[:200]}",
+                    fix=f"Block '{probe_path}' at proxy/gateway.",
                 )
             )
 
@@ -176,14 +176,14 @@ def scan_live_application(client: DastClient) -> List[Finding]:
         findings.append(
             Finding(
                 id="DAST-APP-DEBUG-PAGE-EXPOSED",
-                title="Django interactive debug page exposed on live server",
+                title="Django debug page exposed",
                 severity=Severity.HIGH,
                 owasp_category=OWASPCategory.A05.value,
                 source=FindingSource.DAST_APP,
-                description="Live application returns full Django interactive debug error page upon 404/500 errors, exposing project settings, source code paths, and environment internals.",
+                description="Live app leaked Django debug error page.",
                 request_detail=f"GET /repoguard-error-trigger-random-path-404-check/ HTTP/1.1\nHost: {client.base_url}",
                 response_detail=f"Status: {err_res.status_code}\nSnippet: {body_err[:300]}",
-                fix="Set DEBUG = False in production settings to ensure generic 404 and 500 error templates are displayed.",
+                fix="Set DEBUG = False in production settings.",
             )
         )
 
