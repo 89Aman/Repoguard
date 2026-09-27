@@ -1,10 +1,18 @@
 import argparse
+import os
 import sys
 from pathlib import Path
 from repoguard.core.engine import run_repoguard
+from repoguard.web import run_web_server
 
 
 def main(args=None) -> int:
+    if args is None:
+        args = sys.argv[1:]
+
+    if not args and "PORT" in os.environ:
+        args = ["serve"]
+
     parser = argparse.ArgumentParser(
         prog="repoguard",
         description="RepoGuard: End-to-end Python Repository Security & VAPT Scanner",
@@ -19,7 +27,15 @@ def main(args=None) -> int:
     scan_parser.add_argument("-o", "--output-dir", dest="output_dir", default="repoguard-output", help="Output directory for reports (default: repoguard-output)")
     scan_parser.add_argument("--no-dedup", dest="dedup", action="store_false", default=True, help="Disable duplicate finding consolidation")
 
+    serve_parser = subparsers.add_parser("serve", help="Run RepoGuard HTTP service")
+    serve_parser.add_argument("--host", default="0.0.0.0", help="Host address to bind")
+    serve_parser.add_argument("--port", type=int, default=int(os.environ.get("PORT", 8080)), help="Port to listen on")
+
     parsed = parser.parse_args(args)
+
+    if parsed.command == "serve":
+        run_web_server(host=parsed.host, port=parsed.port)
+        return 0
 
     if parsed.command == "scan":
         target_path = parsed.path

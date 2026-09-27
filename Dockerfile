@@ -23,6 +23,8 @@ RUN ARCH=$(dpkg --print-architecture) && \
 
 COPY pyproject.toml /app/
 COPY repoguard /app/repoguard
+COPY reports /app/reports
+COPY testbeds /app/testbeds
 
 RUN pip install --no-cache-dir -e ".[dev]"
 
