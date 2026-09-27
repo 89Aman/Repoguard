@@ -27,7 +27,7 @@ wheels/
 htmlcov/
 repoguard-output/
 testbeds/pygoat/
-testbeds/drf_sample/db.sqlite3
+testbeds/sample_api/db.sqlite3
 .idea/
 .vscode/
 *.pdf

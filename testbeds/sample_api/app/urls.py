@@ -1,5 +1,5 @@
 from django.urls import path
-from drf_sample import views
+from . import views
 
 urlpatterns = [
     path("api/public-status/", views.public_status),
