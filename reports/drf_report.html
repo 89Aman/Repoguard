@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RepoGuard VAPT Security Assessment Report</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --surface-hover: #334155;
+            --border: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --critical: #ef4444;
+            --high: #f97316;
+            --medium: #f59e0b;
+            --low: #3b82f6;
+            --info: #64748b;
+            --success: #10b981;
+            --code-bg: #090d16;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.5;
+            padding: 24px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        header {
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+        .meta-text { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 28px;
+        }
+        .stat-card {
+            background-color: var(--surface);
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        .stat-label { font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); }
+        .stat-val { font-size: 24px; font-weight: 700; margin-top: 4px; }
+        .stat-critical { color: var(--critical); }
+        .stat-high { color: var(--high); }
+        .stat-medium { color: var(--medium); }
+        .stat-low { color: var(--low); }
+        .stat-info { color: var(--info); }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 28px 0 14px 0;
+            border-left: 3px solid var(--low);
+            padding-left: 10px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+        .badge-CRITICAL { background-color: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid var(--critical); }
+        .badge-HIGH { background-color: rgba(249, 115, 22, 0.2); color: #fdba74; border: 1px solid var(--high); }
+        .badge-MEDIUM { background-color: rgba(245, 158, 11, 0.2); color: #fde68a; border: 1px solid var(--medium); }
+        .badge-LOW { background-color: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid var(--low); }
+        .badge-INFO { background-color: rgba(100, 116, 139, 0.2); color: #cbd5e1; border: 1px solid var(--info); }
+        .badge-PROTECTED { background-color: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid var(--success); }
+        .badge-UNPROTECTED { background-color: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid var(--critical); }
+        .badge-ALLOW_ANY_DEFAULT { background-color: rgba(245, 158, 11, 0.2); color: #fde68a; border: 1px solid var(--medium); }
+
+        .finding-card {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 18px;
+            margin-bottom: 14px;
+        }
+        .finding-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        .finding-title { font-size: 16px; font-weight: 600; }
+        .finding-meta {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .finding-desc { font-size: 14px; margin-bottom: 12px; color: #e2e8f0; }
+        
+        .code-box {
+            background-color: var(--code-bg);
+            border: 1px solid #1e293b;
+            border-radius: 6px;
+            padding: 10px 14px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 12px;
+            color: #38bdf8;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            margin-bottom: 12px;
+        }
+        .fix-box {
+            background-color: rgba(16, 185, 129, 0.1);
+            border-left: 3px solid var(--success);
+            padding: 10px 14px;
+            border-radius: 0 4px 4px 0;
+            font-size: 13px;
+            color: #a7f3d0;
+        }
+        .fix-label { font-weight: 700; color: var(--success); margin-bottom: 2px; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: var(--surface);
+            border-radius: 8px;
+            overflow: hidden;
+            font-size: 13px;
+            margin-bottom: 28px;
+            border: 1px solid var(--border);
+        }
+        th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background-color: #172033; font-weight: 600; color: var(--text-muted); }
+        tr:hover { background-color: var(--surface-hover); }
+        .method-tag {
+            background-color: #334155;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-right: 4px;
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .filter-btn {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .filter-btn:hover, .filter-btn.active { background-color: var(--surface-hover); border-color: var(--low); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>RepoGuard Security Assessment Report</h1>
+                <div class="meta-text">Target: C:\Users\shasa\Projects\Assignment\testbeds\drf_sample | Live URL: http://127.0.0.1:8088 | Scanned at: 2026-09-27 14:56:45 UTC</div>
+            </div>
+            <div>
+                <span class="badge badge-CRITICAL">
+                    BUILD FAILED: CRITICAL FINDINGS
+                </span>
+            </div>
+        </header>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Findings</div>
+                <div class="stat-val">17</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Critical</div>
+                <div class="stat-val stat-critical">2</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">High</div>
+                <div class="stat-val stat-high">5</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Medium</div>
+                <div class="stat-val stat-medium">7</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Low / Info</div>
+                <div class="stat-val stat-low">3</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Endpoints (Unprotected)</div>
+                <div class="stat-val stat-high">
+                    3 (2)
+                </div>
+            </div>
+        </div>
+
+        
+        <h2 class="section-title">Priority Triage: Top Issues to Fix First</h2>
+        <div>
+            
+            <div class="finding-card" style="border-left: 4px solid var(--critical);">
+                <div class="finding-header">
+                    <span class="badge badge-Severity.CRITICAL">Severity.CRITICAL</span>
+                    <span class="finding-title">Hardcoded SECRET_KEY found in settings</span>
+                </div>
+                <div class="finding-meta">
+                    <span>OWASP: A02:2021 - Cryptographic Failures</span>
+                    <span>Source: FindingSource.CONFIGURATION</span>
+                    <span>Location: testbeds\drf_sample\drf_sample\settings.py:6</span>
+                    
+                </div>
+                <div class="finding-desc">SECRET_KEY is hardcoded in source code. Anyone with access to the repo can forge session cookies, sign malicious tokens, and bypass authentication.</div>
+                
+                <div class="code-box">SECRET_KEY = &#34;django-insecure-testbed-sample-secret-key-99&#34;</div>
+                
+                <div class="fix-box">
+                    <div class="fix-label">Required Remediation:</div>
+                    Load SECRET_KEY from an environment variable (e.g. os.environ[&#39;SECRET_KEY&#39;]) or secret manager.
+                </div>
+            </div>
+            
+            <div class="finding-card" style="border-left: 4px solid var(--critical);">
+                <div class="finding-header">
+                    <span class="badge badge-Severity.CRITICAL">Severity.CRITICAL</span>
+                    <span class="finding-title">Unauthenticated data access on API endpoint: /api/unprotected-users/</span>
+                </div>
+                <div class="finding-meta">
+                    <span>OWASP: A01:2021 - Broken Access Control</span>
+                    <span>Source: FindingSource.DAST_API</span>
+                    
+                    <span>Endpoint: GET /api/unprotected-users/</span>
+                </div>
+                <div class="finding-desc">Endpoint &#39;/api/unprotected-users/&#39; returned HTTP 200 OK and data payload when queried with no authentication token. APIs must return 401 or 403.</div>
+                
+                <div class="code-box">GET /api/unprotected-users/ HTTP/1.1
+Host: http://127.0.0.1:8088
+Authorization: (None)&#10;&#10;Status: 200
+Payload: [{&#34;id&#34;:1,&#34;username&#34;:&#34;admin&#34;,&#34;email&#34;:&#34;admin@company.internal&#34;,&#34;role&#34;:&#34;superuser&#34;},{&#34;id&#34;:2,&#34;username&#34;:&#34;finance_lead&#34;,&#34;email&#34;:&#34;finance@company.internal&#34;,&#34;role&#34;:&#34;accountant&#34;}]</div>
+                
+                <div class="fix-box">
+                    <div class="fix-label">Required Remediation:</div>
+                    Enforce authentication and permission checks on this endpoint (e.g. IsAuthenticated). Return 401 Unauthorized for missing tokens.
+                </div>
+            </div>
+            
+            <div class="finding-card" style="border-left: 4px solid var(--high);">
+                <div class="finding-header">
+                    <span class="badge badge-Severity.HIGH">Severity.HIGH</span>
+                    <span class="finding-title">API Endpoint relying on global AllowAny: /api/unprotected-users/</span>
+                </div>
+                <div class="finding-meta">
+                    <span>OWASP: A01:2021 - Broken Access Control</span>
+                    <span>Source: FindingSource.API_DISCOVERY</span>
+                    
+                    <span>Endpoint: GET, DELETE /api/unprotected-users/</span>
+                </div>
+                <div class="finding-desc">Endpoint &#39;/api/unprotected-users/&#39; [GET, DELETE] has no explicit permission class and inherits the project&#39;s global AllowAny default.</div>
+                
+                <div class="code-box">Handler: unprotected_users</div>
+                
+                <div class="fix-box">
+                    <div class="fix-label">Required Remediation:</div>
+                    Explicitly assign authentication and permission classes (e.g. permission_classes = [IsAuthenticated]) or require session login.
+                </div>
+            </div>
+            
+            <div class="finding-card" style="border-left: 4px solid var(--high);">
+                <div class="finding-header">
+                    <span class="badge badge-Severity.HIGH">Severity.HIGH</span>
+                    <span class="finding-title">Database dump or SQLite database committed to repository</span>
+                </div>
+                <div class="finding-meta">
+                    <span>OWASP: A05:2021 - Security Misconfiguration</span>
+                    <span>Source: FindingSource.REPO_HYGIENE</span>
+                    <span>Location: db.sqlite3:1</span>
+                    
+                </div>
+                <div class="finding-desc">Database file or SQL dump &#39;db.sqlite3&#39; is committed in the repository, potentially exposing schema structure, customer data, and credential hashes.</div>
+                
+                <div class="code-box">File: db.sqlite3</div>
+                
+                <div class="fix-box">
+                    <div class="fix-label">Required Remediation:</div>
+                    Remove database dump from source control, add database file extensions to .gitignore, and purge from git history.
+                </div>
+            </div>
+            
+            <div class="finding-card" style="border-left: 4px solid var(--high);">
+                <div class="finding-header">
+                    <span class="badge badge-Severity.HIGH">Severity.HIGH</span>
+                    <span class="finding-title">Django DEBUG set to True</span>
+                </div>
+                <div class="finding-meta">
+                    <span>OWASP: A05:2021 - Security Misconfiguration</span>
+                    <span>Source: FindingSource.CONFIGURATION</span>
+                    <span>Location: testbeds\drf_sample\drf_sample\settings.py:7</span>
+                    
+                </div>
+                <div class="finding-desc">DEBUG mode is enabled. Detailed error pages expose stack traces, settings, and internal variables to users.</div>
+                
+                <div class="code-box">DEBUG = True</div>
+                
+                <div class="fix-box">
+                    <div class="fix-label">Required Remediation:</div>
+                    Set DEBUG = False or load from environment variable (e.g. os.getenv(&#39;DJANGO_DEBUG&#39;, &#39;False&#39;).lower() in (&#39;true&#39;, &#39;1&#39;)).
+                </div>
+            </div>
+            
+            <div class="finding-card" style="border-left: 4px solid var(--high);">
+                <div class="finding-header">
+                    <span class="badge badge-Severity.HIGH">Severity.HIGH</span>
+                    <span class="finding-title">Hardcoded credential: Generic Bearer Secret</span>
+                </div>
+                <div class="finding-meta">
+                    <span>OWASP: A07:2021 - Identification and Authentication Failures</span>
+                    <span>Source: FindingSource.SECRETS</span>
+                    <span>Location: drf_sample/settings.py:6</span>
+                    
+                </div>
+                <div class="finding-desc">Potential Generic Bearer Secret pattern discovered in file &#39;drf_sample/settings.py&#39;.</div>
+                
+                <div class="code-box">Snippet: SECR***************************************************-99&#34;</div>
+                
+                <div class="fix-box">
+                    <div class="fix-label">Required Remediation:</div>
+                    Revoke and rotate exposed credential immediately. Utilize environment variables or vault storage.
+                </div>
+            </div>
+            
+            <div class="finding-card" style="border-left: 4px solid var(--high);">
+                <div class="finding-header">
+                    <span class="badge badge-Severity.HIGH">Severity.HIGH</span>
+                    <span class="finding-title">Missing CsrfViewMiddleware in Django MIDDLEWARE</span>
+                </div>
+                <div class="finding-meta">
+                    <span>OWASP: A01:2021 - Broken Access Control</span>
+                    <span>Source: FindingSource.CONFIGURATION</span>
+                    <span>Location: testbeds\drf_sample\drf_sample\settings.py:1</span>
+                    
+                </div>
+                <div class="finding-desc">CsrfViewMiddleware is missing. POST, PUT, and DELETE forms and API requests are unprotected against Cross-Site Request Forgery.</div>
+                
+                <div class="code-box">MIDDLEWARE without CsrfViewMiddleware</div>
+                
+                <div class="fix-box">
+                    <div class="fix-label">Required Remediation:</div>
+                    Add &#39;django.middleware.csrf.CsrfViewMiddleware&#39; to MIDDLEWARE.
+                </div>
+            </div>
+            
+            <div class="finding-card" style="border-left: 4px solid var(--medium);">
+                <div class="finding-header">
+                    <span class="badge badge-Severity.MEDIUM">Severity.MEDIUM</span>
+                    <span class="finding-title">CSRF_COOKIE_SECURE is disabled</span>
+                </div>
+                <div class="finding-meta">
+                    <span>OWASP: A05:2021 - Security Misconfiguration</span>
+                    <span>Source: FindingSource.CONFIGURATION</span>
+                    <span>Location: testbeds\drf_sample\drf_sample\settings.py:60</span>
+                    
+                </div>
+                <div class="finding-desc">CSRF_COOKIE_SECURE = False allows CSRF tokens to be transmitted over unencrypted HTTP connections.</div>
+                
+                <div class="code-box">CSRF_COOKIE_SECURE = False</div>
+                
+                <div class="fix-box">
+                    <div class="fix-label">Required Remediation:</div>
+                    Set CSRF_COOKIE_SECURE = True in production settings.
+                </div>
+            </div>
+            
+            <div class="finding-card" style="border-left: 4px solid var(--medium);">
+                <div class="finding-header">
+                    <span class="badge badge-Severity.MEDIUM">Severity.MEDIUM</span>
+                    <span class="finding-title">Missing Content-Security-Policy header</span>
+                </div>
+                <div class="finding-meta">
+                    <span>OWASP: A05:2021 - Security Misconfiguration</span>
+                    <span>Source: FindingSource.DAST_APP</span>
+                    
+                    
+                </div>
+                <div class="finding-desc">The response header Content-Security-Policy is not set, leaving users vulnerable to Cross-Site Scripting (XSS) and data injection.</div>
+                
+                <div class="code-box">GET / HTTP/1.1
+Host: http://127.0.0.1:8088&#10;&#10;Status: 404
+Headers: {&#39;date&#39;: &#39;Sun, 27 Sep 2026 14:56:46 GMT&#39;, &#39;server&#39;: &#39;WSGIServer/0.2 CPython/3.11.15&#39;, &#39;content-type&#39;: &#39;text/html; charset=utf-8&#39;, &#39;content-length&#39;: &#39;2500&#39;}</div>
+                
+                <div class="fix-box">
+                    <div class="fix-label">Required Remediation:</div>
+                    Implement a restrictive Content-Security-Policy (e.g. default-src &#39;self&#39;).
+                </div>
+            </div>
+            
+            <div class="finding-card" style="border-left: 4px solid var(--medium);">
+                <div class="finding-header">
+                    <span class="badge badge-Severity.MEDIUM">Severity.MEDIUM</span>
+                    <span class="finding-title">Missing SecurityMiddleware in Django MIDDLEWARE</span>
+                </div>
+                <div class="finding-meta">
+                    <span>OWASP: A05:2021 - Security Misconfiguration</span>
+                    <span>Source: FindingSource.CONFIGURATION</span>
+                    <span>Location: testbeds\drf_sample\drf_sample\settings.py:1</span>
+                    
+                </div>
+                <div class="finding-desc">SecurityMiddleware is absent. Security headers (HSTS, X-Content-Type-Options, SSL redirect) are not enforced by Django.</div>
+                
+                <div class="code-box">MIDDLEWARE without SecurityMiddleware</div>
+                
+                <div class="fix-box">
+                    <div class="fix-label">Required Remediation:</div>
+                    Add &#39;django.middleware.security.SecurityMiddleware&#39; near the top of MIDDLEWARE.
+                </div>
+            </div>
+            
+            <div class="finding-card" style="border-left: 4px solid var(--medium);">
+                <div class="finding-header">
+                    <span class="badge badge-Severity.MEDIUM">Severity.MEDIUM</span>
+                    <span class="finding-title">Missing X-Frame-Options header</span>
+                </div>
+                <div class="finding-meta">
+                    <span>OWASP: A05:2021 - Security Misconfiguration</span>
+                    <span>Source: FindingSource.DAST_APP</span>
+                    
+                    
+                </div>
+                <div class="finding-desc">The X-Frame-Options header is missing, allowing pages to be framed by malicious sites for Clickjacking attacks.</div>
+                
+                <div class="code-box">GET / HTTP/1.1
+Host: http://127.0.0.1:8088&#10;&#10;Status: 404</div>
+                
+                <div class="fix-box">
+                    <div class="fix-label">Required Remediation:</div>
+                    Set &#39;X-Frame-Options: DENY&#39; or &#39;X-Frame-Options: SAMEORIGIN&#39;.
+                </div>
+            </div>
+            
+            <div class="finding-card" style="border-left: 4px solid var(--medium);">
+                <div class="finding-header">
+                    <span class="badge badge-Severity.MEDIUM">Severity.MEDIUM</span>
+                    <span class="finding-title">Missing rate limiting on API endpoints (/api/public-status/)</span>
+                </div>
+                <div class="finding-meta">
+                    <span>OWASP: A04:2021 - Insecure Design</span>
+                    <span>Source: FindingSource.DAST_API</span>
+                    
+                    <span>Endpoint: GET /api/public-status/</span>
+                </div>
+                <div class="finding-desc">Burst of 16 rapid sequential requests to &#39;/api/public-status/&#39; succeeded without 429 throttling or rate-limiting headers.</div>
+                
+                <div class="code-box">16 rapid GET requests to /api/public-status/&#10;&#10;All requests accepted with 200 OK</div>
+                
+                <div class="fix-box">
+                    <div class="fix-label">Required Remediation:</div>
+                    Configure global or endpoint rate limiting (e.g. django-ratelimit, DRF ScopedRateThrottle, or Nginx limit_req).
+                </div>
+            </div>
+            
+        </div>
+        
+
+        
+        <h2 class="section-title">Discovered API Endpoint Inventory</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Path</th>
+                    <th>Methods</th>
+                    <th>Handler / View</th>
+                    <th>Auth / Permission Guards</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+                <tr>
+                    <td><code>/api/public-status/</code></td>
+                    <td>
+                        
+                        <span class="method-tag">GET</span>
+                        
+                    </td>
+                    <td>public_status</td>
+                    <td>
+                        AllowAny
+                    </td>
+                    <td>
+                        <span class="badge badge-EndpointAuthStatus.UNPROTECTED">EndpointAuthStatus.UNPROTECTED</span>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td><code>/api/unprotected-users/</code></td>
+                    <td>
+                        
+                        <span class="method-tag">GET</span>
+                        
+                        <span class="method-tag">DELETE</span>
+                        
+                    </td>
+                    <td>unprotected_users</td>
+                    <td>
+                        <em>None</em>
+                    </td>
+                    <td>
+                        <span class="badge badge-EndpointAuthStatus.ALLOW_ANY_DEFAULT">EndpointAuthStatus.ALLOW_ANY_DEFAULT</span>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td><code>/api/secure-profile/</code></td>
+                    <td>
+                        
+                        <span class="method-tag">GET</span>
+                        
+                        <span class="method-tag">POST</span>
+                        
+                    </td>
+                    <td>SecureProfileView</td>
+                    <td>
+                        IsAuthenticated
+                    </td>
+                    <td>
+                        <span class="badge badge-EndpointAuthStatus.PROTECTED">EndpointAuthStatus.PROTECTED</span>
+                    </td>
+                </tr>
+                
+            </tbody>
+        </table>
+        
+
+        <h2 class="section-title">All Security Findings (17)</h2>
+        <div class="filter-bar">
+            <button class="filter-btn active" onclick="filterFindings('ALL')">All (17)</button>
+            <button class="filter-btn" onclick="filterFindings('CRITICAL')">Critical (2)</button>
+            <button class="filter-btn" onclick="filterFindings('HIGH')">High (5)</button>
+            <button class="filter-btn" onclick="filterFindings('MEDIUM')">Medium (7)</button>
+            <button class="filter-btn" onclick="filterFindings('LOW')">Low (2)</button>
+            <button class="filter-btn" onclick="filterFindings('INFO')">Info (1)</button>
+        </div>
+
+        <div id="findings-container">
+            
+            <div class="finding-card finding-item" data-severity="Severity.CRITICAL">
+                <div class="finding-header">
+                    <span class="badge badge-Severity.CRITICAL">Severity.CRITICAL</span>
+                    <span class="finding-title">Hardcoded SECRET_KEY found in settings</span>
+                </div>
+                <div class="finding-meta">
+                    <span>ID: CFG-HARDCODED-SECRET-KEY-6</span>
+                    <span>OWASP: A02:2021 - Cryptographic Failures</span>
+                    <span>Source: FindingSource.CONFIGURATION</span>
+                    <span>Location: testbeds\drf_sample\drf_sample\settings.py:6</span>
+                    
+                </div>
+                <div class="finding-desc">SECRET_KEY is hardcoded in source code. Anyone with access to the repo can forge session cookies, sign malicious tokens, and bypass authentication.</div>
+                
+                <div class="code-box">SECRET_KEY = &#34;django-insecure-testbed-sample-secret-key-99&#34;</div>
+                
+                <div class="fix-box">
+                    <div class="fix-label">Required Remediation:</div>
+                    Load SECRET_KEY from an environment variable (e.g. os.environ[&#39;SECRET_KEY&#39;]) or secret manager.
+                </div>
+            </div>
+            
+            <div class="finding-card finding-item" data-severity="Severity.CRITICAL">
+                <div class="finding-header">
+                    <span class="badge badge-Severity.CRITICAL">Severity.CRITICAL</span>
+                    <span class="finding-title">Unauthenticated data access on API endpoint: /api/unprotected-users/</span>
+                </div>
+                <div class="finding-meta">
+                    <span>ID: DAST-API-UNAUTH-api-unprotected-users-GET</span>
+                    <span>OWASP: A01:2021 - Broken Access Control</span>
+                    <span>Source: FindingSource.DAST_API</span>
+                    
+                    <span>Endpoint: GET /api/unprotected-users/</span>
+                </div>
+                <div class="finding-desc">Endpoint &#39;/api/unprotected-users/&#39; returned HTTP 200 OK and data payload when queried with no authentication token. APIs must return 401 or 403.</div>
+                
+                <div class="code-box">GET /api/unprotected-users/ HTTP/1.1
+Host: http://127.0.0.1:8088
+Authorization: (None)&#10;&#10;Status: 200
+Payload: [{&#34;id&#34;:1,&#34;username&#34;:&#34;admin&#34;,&#34;email&#34;:&#34;admin@company.internal&#34;,&#34;role&#34;:&#34;superuser&#34;},{&#34;id&#34;:2,&#34;username&#34;:&#34;finance_lead&#34;,&#34;email&#34;:&#34;finance@company.internal&#34;,&#34;role&#34;:&#34;accountant&#34;}]</div>
+                
+                <div class="fix-box">
+                    <div class="fix-label">Required Remediation:</div>
+                    Enforce authentication and permission checks on this endpoint (e.g. IsAuthenticated). Return 401 Unauthorized for missing tokens.
+                </div>
+            </div>
+            
+            <div class="finding-card finding-item" data-severity="Severity.HIGH">
+                <div class="finding-header">
+                    <span class="badge badge-Severity.HIGH">Severity.HIGH</span>
+                    <span class="finding-title">API Endpoint relying on global AllowAny: /api/unprotected-users/</span>
+                </div>
+                <div class="finding-meta">
+                    <span>ID: API-AUTH-2</span>
+                    <span>OWASP: A01:2021 - Broken Access Control</span>
+                    <span>Source: FindingSource.API_DISCOVERY</span>
+                    
+                    <span>Endpoint: GET, DELETE /api/unprotected-users/</span>
+                </div>
+                <div class="finding-desc">Endpoint &#39;/api/unprotected-users/&#39; [GET, DELETE] has no explicit permission class and inherits the project&#39;s global AllowAny default.</div>
+                
+                <div class="code-box">Handler: unprotected_users</div>
+                
+                <div class="fix-box">
+                    <div class="fix-label">Required Remediation:</div>
+                    Explicitly assign authentication and permission classes (e.g. permission_classes = [IsAuthenticated]) or require session login.
+                </div>
+            </div>
+            
+            <div class="finding-card finding-item" data-severity="Severity.HIGH">
+                <div class="finding-header">
+                    <span class="badge badge-Severity.HIGH">Severity.HIGH</span>
+                    <span class="finding-title">Database dump or SQLite database committed to repository</span>
+                </div>
+                <div class="finding-meta">
+                    <span>ID: HYG-DB-1</span>
+                    <span>OWASP: A05:2021 - Security Misconfiguration</span>
+                    <span>Source: FindingSource.REPO_HYGIENE</span>
+                    <span>Location: db.sqlite3:1</span>
+                    
+                </div>
+                <div class="finding-desc">Database file or SQL dump &#39;db.sqlite3&#39; is committed in the repository, potentially exposing schema structure, customer data, and credential hashes.</div>
+                
+                <div class="code-box">File: db.sqlite3</div>
+                
+                <div class="fix-box">
+                    <div class="fix-label">Required Remediation:</div>
+                    Remove database dump from source control, add database file extensions to .gitignore, and purge from git history.
+                </div>
+            </div>
+            
+            <div class="finding-card finding-item" data-severity="Severity.HIGH">
+                <div class="finding-header">
+                    <span class="badge badge-Severity.HIGH">Severity.HIGH</span>
+                    <span class="finding-title">Django DEBUG set to True</span>
+                </div>
+                <div class="finding-meta">
+                    <span>ID: CFG-DEBUG-TRUE-7</span>
+                    <span>OWASP: A05:2021 - Security Misconfiguration</span>
+                    <span>Source: FindingSource.CONFIGURATION</span>
+                    <span>Location: testbeds\drf_sample\drf_sample\settings.py:7</span>
+                    
+                </div>
+                <div class="finding-desc">DEBUG mode is enabled. Detailed error pages expose stack traces, settings, and internal variables to users.</div>
+                
+                <div class="code-box">DEBUG = True</div>
+                
+                <div class="fix-box">
+                    <div class="fix-label">Required Remediation:</div>
+                    Set DEBUG = False or load from environment variable (e.g. os.getenv(&#39;DJANGO_DEBUG&#39;, &#39;False&#39;).lower() in (&#39;true&#39;, &#39;1&#39;)).
+                </div>
+            </div>
+            
+            <div class="finding-card finding-item" data-severity="Severity.HIGH">
+                <div class="finding-header">
+                    <span class="badge badge-Severity.HIGH">Severity.HIGH</span>
+                    <span class="finding-title">Hardcoded credential: Generic Bearer Secret</span>
+                </div>
+                <div class="finding-meta">
+                    <span>ID: SECRET-Generic-Bearer-Secret-6</span>
+                    <span>OWASP: A07:2021 - Identification and Authentication Failures</span>
+                    <span>Source: FindingSource.SECRETS</span>
+                    <span>Location: drf_sample/settings.py:6</span>
+                    
+                </div>
+                <div class="finding-desc">Potential Generic Bearer Secret pattern discovered in file &#39;drf_sample/settings.py&#39;.</div>
+                
+                <div class="code-box">Snippet: SECR***************************************************-99&#34;</div>
+                
+                <div class="fix-box">
+                    <div class="fix-label">Required Remediation:</div>
+                    Revoke and rotate exposed credential immediately. Utilize environment variables or vault storage.
+                </div>
+            </div>
+            
+            <div class="finding-card finding-item" data-severity="Severity.HIGH">
+                <div class="finding-header">
+                    <span class="badge badge-Severity.HIGH">Severity.HIGH</span>
+                    <span class="finding-title">Missing CsrfViewMiddleware in Django MIDDLEWARE</span>
+                </div>
+                <div class="finding-meta">
+                    <span>ID: CFG-MISSING-CSRF-MIDDLEWARE</span>
+                    <span>OWASP: A01:2021 - Broken Access Control</span>
+                    <span>Source: FindingSource.CONFIGURATION</span>
+                    <span>Location: testbeds\drf_sample\drf_sample\settings.py:1</span>
+                    
+                </div>
+                <div class="finding-desc">CsrfViewMiddleware is missing. POST, PUT, and DELETE forms and API requests are unprotected against Cross-Site Request Forgery.</div>
+                
+                <div class="code-box">MIDDLEWARE without CsrfViewMiddleware</div>
+                
+                <div class="fix-box">
+                    <div class="fix-label">Required Remediation:</div>
+                    Add &#39;django.middleware.csrf.CsrfViewMiddleware&#39; to MIDDLEWARE.
+                </div>
+            </div>
+            
+            <div class="finding-card finding-item" data-severity="Severity.MEDIUM">
+                <div class="finding-header">
+                    <span class="badge badge-Severity.MEDIUM">Severity.MEDIUM</span>
+                    <span class="finding-title">CSRF_COOKIE_SECURE is disabled</span>
+                </div>
+                <div class="finding-meta">
+                    <span>ID: CFG-CSRF-COOKIE-SECURE-60</span>
+                    <span>OWASP: A05:2021 - Security Misconfiguration</span>
+                    <span>Source: FindingSource.CONFIGURATION</span>
+                    <span>Location: testbeds\drf_sample\drf_sample\settings.py:60</span>
+                    
+                </div>
+                <div class="finding-desc">CSRF_COOKIE_SECURE = False allows CSRF tokens to be transmitted over unencrypted HTTP connections.</div>
+                
+                <div class="code-box">CSRF_COOKIE_SECURE = False</div>
+                
+                <div class="fix-box">
+                    <div class="fix-label">Required Remediation:</div>
+                    Set CSRF_COOKIE_SECURE = True in production settings.
+                </div>
+            </div>
+            
+            <div class="finding-card finding-item" data-severity="Severity.MEDIUM">
+                <div class="finding-header">
+                    <span class="badge badge-Severity.MEDIUM">Severity.MEDIUM</span>
+                    <span class="finding-title">Missing Content-Security-Policy header</span>
+                </div>
+                <div class="finding-meta">
+                    <span>ID: DAST-HDR-MISSING-CSP</span>
+                    <span>OWASP: A05:2021 - Security Misconfiguration</span>
+                    <span>Source: FindingSource.DAST_APP</span>
+                    
+                    
+                </div>
+                <div class="finding-desc">The response header Content-Security-Policy is not set, leaving users vulnerable to Cross-Site Scripting (XSS) and data injection.</div>
+                
+                <div class="code-box">GET / HTTP/1.1
+Host: http://127.0.0.1:8088&#10;&#10;Status: 404
+Headers: {&#39;date&#39;: &#39;Sun, 27 Sep 2026 14:56:46 GMT&#39;, &#39;server&#39;: &#39;WSGIServer/0.2 CPython/3.11.15&#39;, &#39;content-type&#39;: &#39;text/html; charset=utf-8&#39;, &#39;content-length&#39;: &#39;2500&#39;}</div>
+                
+                <div class="fix-box">
+                    <div class="fix-label">Required Remediation:</div>
+                    Implement a restrictive Content-Security-Policy (e.g. default-src &#39;self&#39;).
+                </div>
+            </div>
+            
+            <div class="finding-card finding-item" data-severity="Severity.MEDIUM">
+                <div class="finding-header">
+                    <span class="badge badge-Severity.MEDIUM">Severity.MEDIUM</span>
+                    <span class="finding-title">Missing SecurityMiddleware in Django MIDDLEWARE</span>
+                </div>
+                <div class="finding-meta">
+                    <span>ID: CFG-MISSING-SECURITY-MIDDLEWARE</span>
+                    <span>OWASP: A05:2021 - Security Misconfiguration</span>
+                    <span>Source: FindingSource.CONFIGURATION</span>
+                    <span>Location: testbeds\drf_sample\drf_sample\settings.py:1</span>
+                    
+                </div>
+                <div class="finding-desc">SecurityMiddleware is absent. Security headers (HSTS, X-Content-Type-Options, SSL redirect) are not enforced by Django.</div>
+                
+                <div class="code-box">MIDDLEWARE without SecurityMiddleware</div>
+                
+                <div class="fix-box">
+                    <div class="fix-label">Required Remediation:</div>
+                    Add &#39;django.middleware.security.SecurityMiddleware&#39; near the top of MIDDLEWARE.
+                </div>
+            </div>
+            
+            <div class="finding-card finding-item" data-severity="Severity.MEDIUM">
+                <div class="finding-header">
+                    <span class="badge badge-Severity.MEDIUM">Severity.MEDIUM</span>
+                    <span class="finding-title">Missing X-Frame-Options header</span>
+                </div>
+                <div class="finding-meta">
+                    <span>ID: DAST-HDR-MISSING-XFO</span>
+                    <span>OWASP: A05:2021 - Security Misconfiguration</span>
+                    <span>Source: FindingSource.DAST_APP</span>
+                    
+                    
+                </div>
+                <div class="finding-desc">The X-Frame-Options header is missing, allowing pages to be framed by malicious sites for Clickjacking attacks.</div>
+                
+                <div class="code-box">GET / HTTP/1.1
+Host: http://127.0.0.1:8088&#10;&#10;Status: 404</div>
+                
+                <div class="fix-box">
+                    <div class="fix-label">Required Remediation:</div>
+                    Set &#39;X-Frame-Options: DENY&#39; or &#39;X-Frame-Options: SAMEORIGIN&#39;.
+                </div>
+            </div>
+            
+            <div class="finding-card finding-item" data-severity="Severity.MEDIUM">
+                <div class="finding-header">
+                    <span class="badge badge-Severity.MEDIUM">Severity.MEDIUM</span>
+                    <span class="finding-title">Missing rate limiting on API endpoints (/api/public-status/)</span>
+                </div>
+                <div class="finding-meta">
+                    <span>ID: DAST-API-NO-RATE-LIMIT</span>
+                    <span>OWASP: A04:2021 - Insecure Design</span>
+                    <span>Source: FindingSource.DAST_API</span>
+                    
+                    <span>Endpoint: GET /api/public-status/</span>
+                </div>
+                <div class="finding-desc">Burst of 16 rapid sequential requests to &#39;/api/public-status/&#39; succeeded without 429 throttling or rate-limiting headers.</div>
+                
+                <div class="code-box">16 rapid GET requests to /api/public-status/&#10;&#10;All requests accepted with 200 OK</div>
+                
+                <div class="fix-box">
+                    <div class="fix-label">Required Remediation:</div>
+                    Configure global or endpoint rate limiting (e.g. django-ratelimit, DRF ScopedRateThrottle, or Nginx limit_req).
+                </div>
+            </div>
+            
+            <div class="finding-card finding-item" data-severity="Severity.MEDIUM">
+                <div class="finding-header">
+                    <span class="badge badge-Severity.MEDIUM">Severity.MEDIUM</span>
+                    <span class="finding-title">SESSION_COOKIE_SECURE is disabled</span>
+                </div>
+                <div class="finding-meta">
+                    <span>ID: CFG-SESSION-COOKIE-SECURE-59</span>
+                    <span>OWASP: A05:2021 - Security Misconfiguration</span>
+                    <span>Source: FindingSource.CONFIGURATION</span>
+                    <span>Location: testbeds\drf_sample\drf_sample\settings.py:59</span>
+                    
+                </div>
+                <div class="finding-desc">SESSION_COOKIE_SECURE = False allows session cookies to be transmitted over unencrypted HTTP connections.</div>
+                
+                <div class="code-box">SESSION_COOKIE_SECURE = False</div>
+                
+                <div class="fix-box">
+                    <div class="fix-label">Required Remediation:</div>
+                    Set SESSION_COOKIE_SECURE = True in production settings.
+                </div>
+            </div>
+            
+            <div class="finding-card finding-item" data-severity="Severity.MEDIUM">
+                <div class="finding-header">
+                    <span class="badge badge-Severity.MEDIUM">Severity.MEDIUM</span>
+                    <span class="finding-title">Unprotected API Endpoint: /api/public-status/</span>
+                </div>
+                <div class="finding-meta">
+                    <span>ID: API-AUTH-1</span>
+                    <span>OWASP: A01:2021 - Broken Access Control</span>
+                    <span>Source: FindingSource.API_DISCOVERY</span>
+                    
+                    <span>Endpoint: GET /api/public-status/</span>
+                </div>
+                <div class="finding-desc">Endpoint &#39;/api/public-status/&#39; [GET] exposes functionality without authentication or permission verification.</div>
+                
+                <div class="code-box">Handler: public_status</div>
+                
+                <div class="fix-box">
+                    <div class="fix-label">Required Remediation:</div>
+                    Explicitly assign authentication and permission classes (e.g. permission_classes = [IsAuthenticated]) or require session login.
+                </div>
+            </div>
+            
+            <div class="finding-card finding-item" data-severity="Severity.LOW">
+                <div class="finding-header">
+                    <span class="badge badge-Severity.LOW">Severity.LOW</span>
+                    <span class="finding-title">Missing X-Content-Type-Options header</span>
+                </div>
+                <div class="finding-meta">
+                    <span>ID: DAST-HDR-MISSING-XCTO</span>
+                    <span>OWASP: A05:2021 - Security Misconfiguration</span>
+                    <span>Source: FindingSource.DAST_APP</span>
+                    
+                    
+                </div>
+                <div class="finding-desc">The X-Content-Type-Options header is missing. Browsers may MIME-sniff the response, leading to unexpected script execution.</div>
+                
+                <div class="code-box">GET / HTTP/1.1
+Host: http://127.0.0.1:8088&#10;&#10;Status: 404</div>
+                
+                <div class="fix-box">
+                    <div class="fix-label">Required Remediation:</div>
+                    Set &#39;X-Content-Type-Options: nosniff&#39;.
+                </div>
+            </div>
+            
+            <div class="finding-card finding-item" data-severity="Severity.LOW">
+                <div class="finding-header">
+                    <span class="badge badge-Severity.LOW">Severity.LOW</span>
+                    <span class="finding-title">Server and framework version disclosure in HTTP headers</span>
+                </div>
+                <div class="finding-meta">
+                    <span>ID: DAST-HDR-VERSION-DISCLOSURE</span>
+                    <span>OWASP: A05:2021 - Security Misconfiguration</span>
+                    <span>Source: FindingSource.DAST_APP</span>
+                    
+                    
+                </div>
+                <div class="finding-desc">Server exposes version signatures: Server: &#39;WSGIServer/0.2 CPython/3.11.15&#39;, X-Powered-By: &#39;&#39;. This aids attackers in fingerprinting known CVEs.</div>
+                
+                <div class="code-box">GET / HTTP/1.1
+Host: http://127.0.0.1:8088&#10;&#10;Server: WSGIServer/0.2 CPython/3.11.15
+X-Powered-By: </div>
+                
+                <div class="fix-box">
+                    <div class="fix-label">Required Remediation:</div>
+                    Strip or suppress Server and X-Powered-By header banners in web server / reverse proxy configuration.
+                </div>
+            </div>
+            
+            <div class="finding-card finding-item" data-severity="Severity.INFO">
+                <div class="finding-header">
+                    <span class="badge badge-Severity.INFO">Severity.INFO</span>
+                    <span class="finding-title">pip-audit scanner not found in PATH</span>
+                </div>
+                <div class="finding-meta">
+                    <span>ID: DEP-PIP-AUDIT-MISSING</span>
+                    <span>OWASP: A06:2021 - Vulnerable and Outdated Components</span>
+                    <span>Source: FindingSource.DEPENDENCIES</span>
+                    <span>Location: requirements.txt:1</span>
+                    
+                </div>
+                <div class="finding-desc">pip-audit binary is not installed in current environment. Dependency CVE assessment could not run.</div>
+                
+                <div class="fix-box">
+                    <div class="fix-label">Required Remediation:</div>
+                    Install pip-audit with &#39;pip install pip-audit&#39; or run via RepoGuard Docker container.
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <script>
+        function filterFindings(sev) {
+            const items = document.querySelectorAll('.finding-item');
+            const btns = document.querySelectorAll('.filter-btn');
+            btns.forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+
+            items.forEach(item => {
+                if (sev === 'ALL' || item.getAttribute('data-severity') === sev) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

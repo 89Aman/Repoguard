@@ -26,6 +26,7 @@ wheels/
 .coverage
 htmlcov/
 repoguard-output/
-reports/
+testbeds/pygoat/
+testbeds/drf_sample/db.sqlite3
 .idea/
 .vscode/
