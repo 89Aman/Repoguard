@@ -138,5 +138,5 @@ python -m repoguard scan . --url http://localhost:8000
 ## Verification Testbeds
 
 Reports from verified test runs are committed in the `reports/` directory:
-- `reports/drf_report.html` & `reports/drf_findings.json`: Scan of the Django REST Framework testbed (`testbeds/drf_sample/`).
-- `reports/pygoat_report.html` & `reports/pygoat_findings.json`: Scan of the PyGoat vulnerable target.
+- `reports/drf/report.html` & `reports/drf/findings.json`: Scan of the Django REST Framework testbed (`testbeds/sample_api/`).
+- `reports/pygoat/report.html` & `reports/pygoat/findings.json`: Scan of the PyGoat vulnerable target.

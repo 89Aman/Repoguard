@@ -1,4 +1,4 @@
-from repoguard.static.config_checker import scan_configuration
+from repoguard.static.config import scan_configuration
 from repoguard.static.deps import scan_dependencies
 from repoguard.static.hygiene import scan_repo_hygiene
 from repoguard.static.sast import scan_sast

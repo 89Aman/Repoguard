@@ -2,7 +2,7 @@ import datetime
 from pathlib import Path
 from typing import List, Optional, Tuple
 from repoguard.api.discovery import discover_api_endpoints
-from repoguard.core.deduplicator import deduplicate_findings, get_top_fixes
+from repoguard.core.dedup import deduplicate_findings, get_top_fixes
 from repoguard.core.models import (
     EndpointInfo,
     Finding,
@@ -10,11 +10,11 @@ from repoguard.core.models import (
     ScanSummary,
     Severity,
 )
-from repoguard.dast.api_scanner import scan_live_apis
-from repoguard.dast.app_scanner import scan_live_application
+from repoguard.dast.api import scan_live_apis
+from repoguard.dast.app import scan_live_application
 from repoguard.dast.client import DastClient
 from repoguard.report.generator import generate_reports
-from repoguard.static.config_checker import scan_configuration
+from repoguard.static.config import scan_configuration
 from repoguard.static.deps import scan_dependencies
 from repoguard.static.hygiene import scan_repo_hygiene
 from repoguard.static.sast import scan_sast
