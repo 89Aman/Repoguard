@@ -46,3 +46,33 @@ def test_deduplicator_merges_nearby_sast():
     top = get_top_fixes(deduped, limit=1)
     assert len(top) == 1
     assert top[0].id == "BANDIT-B608-42"
+
+
+def test_deduplicator_higher_severity_wins():
+    f_low = Finding(
+        id="LOW-1",
+        title="Issue",
+        severity=Severity.MEDIUM,
+        owasp_category=OWASPCategory.A03.value,
+        source=FindingSource.SAST,
+        file_path="app/views.py",
+        line_number=10,
+        description="Medium issue",
+        fix="Fix it",
+    )
+    f_high = Finding(
+        id="HIGH-1",
+        title="Issue",
+        severity=Severity.CRITICAL,
+        owasp_category=OWASPCategory.A03.value,
+        source=FindingSource.SAST,
+        file_path="app/views.py",
+        line_number=11,
+        description="Critical issue",
+        fix="Fix it immediately",
+    )
+
+    deduped = deduplicate_findings([f_low, f_high])
+    assert len(deduped) == 1
+    assert deduped[0].severity == Severity.CRITICAL
+    assert deduped[0].id == "HIGH-1"

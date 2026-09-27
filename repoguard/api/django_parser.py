@@ -36,12 +36,15 @@ def _extract_class_list(node: ast.AST) -> List[str]:
     return results
 
 
+IGNORED_PATH_PARTS = (".venv", "venv", "node_modules", "migrations", ".git", "site-packages")
+
+
 def parse_view_definitions(repo_path: Path) -> Dict[str, ViewDef]:
     views: Dict[str, ViewDef] = {}
 
     for py_file in repo_path.rglob("*.py"):
         rel_str = str(py_file.relative_to(repo_path)).replace("\\", "/")
-        if any(ignored in rel_str for ignored in (".venv", "venv", "node_modules")):
+        if any(ignored in rel_str for ignored in IGNORED_PATH_PARTS):
             continue
 
         try:
@@ -99,7 +102,7 @@ def parse_django_urls(repo_path: Path, views: Dict[str, ViewDef], global_allow_a
 
     for url_file in repo_path.rglob("urls.py"):
         rel_str = str(url_file.relative_to(repo_path)).replace("\\", "/")
-        if any(ignored in rel_str for ignored in (".venv", "venv", "node_modules")):
+        if any(ignored in rel_str for ignored in IGNORED_PATH_PARTS):
             continue
 
         try:
