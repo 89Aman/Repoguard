@@ -1,0 +1,14 @@
+.git
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+*.egg-info
+.coverage
+htmlcov
+dist
+build
+repoguard-output
+*.pdf

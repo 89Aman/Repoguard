@@ -28,7 +28,8 @@ COPY testbeds /app/testbeds
 
 RUN pip install --no-cache-dir -e ".[dev]"
 
-WORKDIR /workspace
+WORKDIR /app
+EXPOSE 8080
 
 ENTRYPOINT ["python", "-m", "repoguard"]
-CMD ["scan", "."]
+CMD ["serve"]
