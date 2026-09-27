@@ -17,6 +17,9 @@ FALLBACK_PATTERNS = [
     ("Generic Bearer Secret", r'(?i)(?:api_key|apikey|secret_key|auth_token)\s*[:=]\s*["\']([a-zA-Z0-9_\-]{16,})["\']', Severity.HIGH),
 ]
 
+COMPILED_PATTERNS = [(name, re.compile(pat), sev) for name, pat, sev in FALLBACK_PATTERNS]
+MAX_SECRET_SCAN_FILE_SIZE = 1_000_000
+
 EXCLUDE_DIRS = {".git", ".venv", "venv", "node_modules", "repoguard-output", "reports"}
 
 
@@ -84,6 +87,8 @@ def _scan_regex_fallback(repo_path: Path) -> List[Finding]:
             continue
 
         try:
+            if p.stat().st_size > MAX_SECRET_SCAN_FILE_SIZE:
+                continue
             with open(p, "r", encoding="utf-8", errors="ignore") as f:
                 lines = f.readlines()
         except Exception:
@@ -91,8 +96,8 @@ def _scan_regex_fallback(repo_path: Path) -> List[Finding]:
 
         rel_path = str(p.relative_to(repo_path)).replace("\\", "/")
         for line_idx, line in enumerate(lines, start=1):
-            for name, pattern, severity in FALLBACK_PATTERNS:
-                match = re.search(pattern, line)
+            for name, pattern_regex, severity in COMPILED_PATTERNS:
+                match = pattern_regex.search(line)
                 if match:
                     raw_val = match.group(0)
                     masked = raw_val[:4] + ("*" * max(0, len(raw_val) - 8)) + raw_val[-4:] if len(raw_val) > 8 else "***"

@@ -29,7 +29,7 @@ def run_repoguard(
     output_dir: str = "repoguard-output",
     deduplicate: bool = True,
 ) -> Tuple[ReportData, int]:
-    scanned_at = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+    scanned_at = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
     all_findings: List[Finding] = []
 
     all_findings.extend(scan_dependencies(repo_path))

@@ -12,7 +12,7 @@ SEVERITY_ORDER = {
 
 def deduplicate_findings(findings: List[Finding]) -> List[Finding]:
     deduped: List[Finding] = []
-    seen_keys = set()
+    seen_map = {}
 
     for item in findings:
         file_key = None
@@ -29,10 +29,13 @@ def deduplicate_findings(findings: List[Finding]) -> List[Finding]:
 
         dedup_key = file_key or endpoint_key or f"{item.title}:{item.description[:60]}"
 
-        if dedup_key in seen_keys:
+        if dedup_key in seen_map:
+            existing_idx = seen_map[dedup_key]
+            if SEVERITY_ORDER.get(item.severity, 99) < SEVERITY_ORDER.get(deduped[existing_idx].severity, 99):
+                deduped[existing_idx] = item
             continue
 
-        seen_keys.add(dedup_key)
+        seen_map[dedup_key] = len(deduped)
         deduped.append(item)
 
     deduped.sort(key=lambda x: (SEVERITY_ORDER.get(x.severity, 99), x.title))
