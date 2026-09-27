@@ -1,4 +1,4 @@
-from repoguard.core.deduplicator import deduplicate_findings, get_top_fixes
+from repoguard.core.dedup import deduplicate_findings, get_top_fixes
 from repoguard.core.models import Finding, FindingSource, OWASPCategory, Severity
 
 

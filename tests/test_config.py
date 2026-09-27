@@ -1,7 +1,7 @@
 import tempfile
 from pathlib import Path
 from repoguard.core.models import OWASPCategory, Severity
-from repoguard.static.config_checker import scan_configuration_file
+from repoguard.static.config import scan_configuration_file
 
 
 def test_django_settings_vulnerabilities():

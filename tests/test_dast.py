@@ -2,8 +2,8 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from repoguard.core.models import EndpointAuthStatus, EndpointInfo, Severity
-from repoguard.dast.api_scanner import scan_live_apis
-from repoguard.dast.app_scanner import scan_live_application
+from repoguard.dast.api import scan_live_apis
+from repoguard.dast.app import scan_live_application
 from repoguard.dast.client import DastClient
 
 

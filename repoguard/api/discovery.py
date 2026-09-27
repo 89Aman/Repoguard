@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import List, Tuple
-from repoguard.api.django_parser import parse_django_urls, parse_view_definitions
-from repoguard.api.flask_parser import parse_flask_routes
+from repoguard.api.django import parse_django_urls, parse_view_definitions
+from repoguard.api.flask import parse_flask_routes
 from repoguard.core.models import EndpointAuthStatus, EndpointInfo, Finding, FindingSource, OWASPCategory, Severity
 
 
