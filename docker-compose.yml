@@ -1,0 +1,9 @@
+services:
+  repoguard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/workspace
+    network_mode: "host"
+    command: ["scan", "."]
